@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Browser Reminder Assistant",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "瀏覽器工作流中的輕量提醒助手",
   "permissions": [
     "alarms",

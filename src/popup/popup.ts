@@ -126,7 +126,7 @@ function renderReminderItem(r: Reminder): HTMLLIElement {
   const timeStr = r.type === 'one_time'
     ? new Date((r as OneTimeReminder).schedule.dateTime).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
     : r.type === 'recurring'
-      ? `${(r as RecurringReminder).schedule.frequency === 'daily' ? '每天' : '每週'} ${(r as RecurringReminder).schedule.timeOfDay}`
+      ? `${(r as RecurringReminder).schedule.frequency === 'daily' ? '每天' : (r as RecurringReminder).schedule.frequency === 'weekly' ? '每週' : `每月 ${(r as RecurringReminder).schedule.dayOfMonth} 號`} ${(r as RecurringReminder).schedule.timeOfDay}`
       : r.type === 'site_trigger'
         ? `🌐 網站情境 (${(r as SiteTriggerReminder).rule.urlPatterns.length} 個網站)`
         : `首次開啟 (${(r as FirstOpenReminder).schedule.cadence === 'daily' ? '每天' : '每週'})`;
@@ -205,7 +205,7 @@ async function handleAction(id: string, action: string, snoozeValue?: string): P
   const reminder = await getReminderById(id);
   if (!reminder) return;
   const now = new Date().toISOString();
-  const freq: 'daily' | 'weekly' = reminder.type === 'one_time' ? 'daily'
+  const freq: 'daily' | 'weekly' | 'monthly' = reminder.type === 'one_time' ? 'daily'
     : reminder.type === 'recurring' ? (reminder as RecurringReminder).schedule.frequency
     : reminder.type === 'site_trigger'
       ? ((reminder as SiteTriggerReminder).schedule.cadence === 'every_visit' ? 'daily' : (reminder as SiteTriggerReminder).schedule.cadence as 'daily' | 'weekly')

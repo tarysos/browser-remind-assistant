@@ -76,6 +76,26 @@ export function getNextFireTimeRecurring(schedule: RecurringSchedule): number | 
     return candidate.getTime();
   }
 
+  if (schedule.frequency === 'monthly' && schedule.dayOfMonth != null) {
+    // 找本月或下個月符合的日期
+    for (let monthOffset = 0; monthOffset < 2; monthOffset++) {
+      const candidate = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
+      const lastDay = new Date(candidate.getFullYear(), candidate.getMonth() + 1, 0).getDate();
+      const effectiveDay = Math.min(schedule.dayOfMonth, lastDay);
+      candidate.setDate(effectiveDay);
+      candidate.setHours(hours, minutes, 0, 0);
+      if (candidate.getTime() > now.getTime()) {
+        return candidate.getTime();
+      }
+    }
+    // fallback: 兩個月後
+    const candidate = new Date(now.getFullYear(), now.getMonth() + 2, 1);
+    const lastDay = new Date(candidate.getFullYear(), candidate.getMonth() + 1, 0).getDate();
+    candidate.setDate(Math.min(schedule.dayOfMonth, lastDay));
+    candidate.setHours(hours, minutes, 0, 0);
+    return candidate.getTime();
+  }
+
   return null;
 }
 

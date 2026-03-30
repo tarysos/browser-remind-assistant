@@ -49,9 +49,18 @@ export function getWeeklyPeriodKey(date: Date = new Date()): PeriodKey {
   return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
 }
 
+/** 取得本月的 monthly period key: YYYY-MM */
+export function getMonthlyPeriodKey(date: Date = new Date()): PeriodKey {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  return `${y}-${m}`;
+}
+
 /** 依頻率取得對應的 period key */
-export function getPeriodKey(frequency: 'daily' | 'weekly', date: Date = new Date()): PeriodKey {
-  return frequency === 'daily' ? getDailyPeriodKey(date) : getWeeklyPeriodKey(date);
+export function getPeriodKey(frequency: 'daily' | 'weekly' | 'monthly', date: Date = new Date()): PeriodKey {
+  if (frequency === 'daily') return getDailyPeriodKey(date);
+  if (frequency === 'weekly') return getWeeklyPeriodKey(date);
+  return getMonthlyPeriodKey(date);
 }
 
 // ============================================================
@@ -129,6 +138,13 @@ function evaluateRecurring(reminder: RecurringReminder, source: TriggerSource): 
   if (schedule.frequency === 'weekly') {
     const dayOfWeek = now.getDay() as DayOfWeek;
     if (!schedule.daysOfWeek.includes(dayOfWeek)) return no;
+  }
+
+  // monthly：檢查日期（處理月末溢位，例如設定 31 號但本月只有 28 天則在月末觸發）
+  if (schedule.frequency === 'monthly' && schedule.dayOfMonth != null) {
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const effectiveDay = Math.min(schedule.dayOfMonth, lastDay);
+    if (now.getDate() !== effectiveDay) return no;
   }
 
   // 時間已到

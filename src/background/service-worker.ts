@@ -50,7 +50,7 @@ import type { TriggerResult } from '../modules/trigger-evaluator/index.js';
 const DEFAULT_SNOOZE_MINUTES = 30;
 
 /** 取得提醒的頻率（用於計算 periodKey） */
-function getFrequency(reminder: Reminder): 'daily' | 'weekly' {
+function getFrequency(reminder: Reminder): 'daily' | 'weekly' | 'monthly' {
   switch (reminder.type) {
     case 'one_time': return 'daily';
     case 'recurring': return (reminder as RecurringReminder).schedule.frequency;

@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   getDailyPeriodKey,
   getWeeklyPeriodKey,
+  getMonthlyPeriodKey,
   getPeriodKey,
   isWithinTimeWindow,
   evaluate,
@@ -37,6 +38,23 @@ describe('getWeeklyPeriodKey', () => {
     const date = new Date('2026-03-30T10:00:00+08:00');
     const key = getWeeklyPeriodKey(date);
     expect(key).toMatch(/^\d{4}-W\d{2}$/);
+  });
+});
+
+describe('getMonthlyPeriodKey', () => {
+  it('should return YYYY-MM format', () => {
+    const date = new Date('2026-03-30T10:00:00+08:00');
+    const key = getMonthlyPeriodKey(date);
+    expect(key).toMatch(/^\d{4}-\d{2}$/);
+    expect(key).toBe('2026-03');
+  });
+});
+
+describe('getPeriodKey with monthly', () => {
+  it('should return monthly period key for monthly frequency', () => {
+    const date = new Date('2026-07-15T10:00:00');
+    const key = getPeriodKey('monthly', date);
+    expect(key).toBe('2026-07');
   });
 });
 
@@ -127,6 +145,66 @@ describe('evaluate one_time', () => {
         dateTime: new Date(Date.now() + 3600000).toISOString(),
       },
     };
+    const result = evaluate(r, 'alarm');
+    expect(result.shouldTrigger).toBe(false);
+  });
+});
+
+// ============================================================
+// evaluate — Monthly Recurring Reminder
+// ============================================================
+
+describe('evaluate recurring monthly', () => {
+  const now = new Date();
+  const todayDay = now.getDate();
+  const pastTime = `${String(now.getHours()).padStart(2, '0')}:${String(Math.max(now.getMinutes() - 1, 0)).padStart(2, '0')}`;
+
+  const baseMonthly: RecurringReminder = {
+    id: 'r_test_monthly',
+    type: 'recurring',
+    title: 'Monthly test',
+    message: '',
+    enabled: true,
+    schedule: {
+      frequency: 'monthly',
+      daysOfWeek: [],
+      dayOfMonth: todayDay,
+      timeOfDay: pastTime,
+      timezone: 'Asia/Taipei',
+      startDate: null,
+      endDate: null,
+    },
+    rule: { allowMissedCatchup: true },
+    state: { lastTriggeredAt: null, lastTriggeredPeriodKey: null, snoozeUntil: null, completedAt: null },
+    meta: { createdAt: '', updatedAt: '' },
+  };
+
+  it('should trigger when today is the correct day of month and time has passed', () => {
+    const result = evaluate(baseMonthly, 'alarm');
+    expect(result.shouldTrigger).toBe(true);
+  });
+
+  it('should NOT trigger on a different day of month', () => {
+    const wrongDay = todayDay === 15 ? 20 : 15;
+    const r: RecurringReminder = {
+      ...baseMonthly,
+      schedule: { ...baseMonthly.schedule, dayOfMonth: wrongDay },
+    };
+    const result = evaluate(r, 'alarm');
+    expect(result.shouldTrigger).toBe(false);
+  });
+
+  it('should NOT trigger if already triggered this month', () => {
+    const r: RecurringReminder = {
+      ...baseMonthly,
+      state: { ...baseMonthly.state, lastTriggeredPeriodKey: getMonthlyPeriodKey() },
+    };
+    const result = evaluate(r, 'alarm');
+    expect(result.shouldTrigger).toBe(false);
+  });
+
+  it('should NOT trigger when disabled', () => {
+    const r = { ...baseMonthly, enabled: false };
     const result = evaluate(r, 'alarm');
     expect(result.shouldTrigger).toBe(false);
   });

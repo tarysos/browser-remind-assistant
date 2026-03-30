@@ -57,6 +57,9 @@ const fieldsOneTime = document.getElementById('fields-one-time') as HTMLFieldSet
 const fieldsRecurring = document.getElementById('fields-recurring') as HTMLFieldSetElement;
 const fieldsFirstOpen = document.getElementById('fields-first-open') as HTMLFieldSetElement;
 const fieldsSiteTrigger = document.getElementById('fields-site-trigger') as HTMLFieldSetElement;
+const fieldsWeeklyDays = document.getElementById('fields-weekly-days') as HTMLDivElement;
+const fieldsMonthlyDay = document.getElementById('fields-monthly-day') as HTMLDivElement;
+const formDayOfMonth = document.getElementById('form-day-of-month') as HTMLInputElement;
 const formUrlPatterns = document.getElementById('form-url-patterns') as HTMLTextAreaElement;
 const formSiteCadence = document.getElementById('form-site-cadence') as HTMLSelectElement;
 const formSiteWindowStart = document.getElementById('form-site-window-start') as HTMLInputElement;
@@ -93,6 +96,12 @@ function getScheduleHtml(r: Reminder): string {
     if (s.frequency === 'daily') {
       return `<div class="schedule-detail">
         <span class="schedule-main">🔁 每天</span>
+        <span class="schedule-sub">🕐 ${s.timeOfDay}</span>
+      </div>`;
+    }
+    if (s.frequency === 'monthly') {
+      return `<div class="schedule-detail">
+        <span class="schedule-main">🔁 每月 ${s.dayOfMonth} 號</span>
         <span class="schedule-sub">🕐 ${s.timeOfDay}</span>
       </div>`;
     }
@@ -173,11 +182,19 @@ async function renderList(): Promise<void> {
 // 表單操作
 // ============================================================
 
+function showFrequencySubFields(freq: string): void {
+  fieldsWeeklyDays.style.display = freq === 'weekly' ? 'block' : 'none';
+  fieldsMonthlyDay.style.display = freq === 'monthly' ? 'block' : 'none';
+}
+
 function showTypeFields(type: string): void {
   fieldsOneTime.style.display = type === 'one_time' ? 'block' : 'none';
   fieldsRecurring.style.display = type === 'recurring' ? 'block' : 'none';
   fieldsFirstOpen.style.display = type === 'first_open' ? 'block' : 'none';
   fieldsSiteTrigger.style.display = type === 'site_trigger' ? 'block' : 'none';
+  if (type === 'recurring') {
+    showFrequencySubFields(formFrequency.value);
+  }
 }
 
 function showForm(title: string): void {
@@ -215,11 +232,13 @@ function buildReminderFromForm(): Reminder {
       meta,
     } as OneTimeReminder;
   } else if (type === 'recurring') {
+    const freq = formFrequency.value as 'daily' | 'weekly' | 'monthly';
     return {
       id, type, title: formReminderTitle.value, message: formMessage.value, enabled: true,
       schedule: {
-        frequency: formFrequency.value as 'daily' | 'weekly',
-        daysOfWeek: getCheckedDays('form-days'),
+        frequency: freq,
+        daysOfWeek: freq === 'weekly' ? getCheckedDays('form-days') : [],
+        dayOfMonth: freq === 'monthly' ? Number(formDayOfMonth.value) : null,
         timeOfDay: formTime.value,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         startDate: null, endDate: null,
@@ -269,6 +288,7 @@ function buildReminderFromForm(): Reminder {
 // ============================================================
 
 formType.addEventListener('change', () => showTypeFields(formType.value));
+formFrequency.addEventListener('change', () => showFrequencySubFields(formFrequency.value));
 
 btnAdd.addEventListener('click', () => {
   showForm('新增提醒');
@@ -336,6 +356,10 @@ function populateForm(r: Reminder): void {
     formFrequency.value = s.frequency;
     formTime.value = s.timeOfDay;
     setCheckedDays('form-days', s.daysOfWeek);
+    if (s.dayOfMonth != null) {
+      formDayOfMonth.value = String(s.dayOfMonth);
+    }
+    showFrequencySubFields(s.frequency);
   } else if (r.type === 'site_trigger') {
     const s = (r as SiteTriggerReminder).schedule;
     const ru = (r as SiteTriggerReminder).rule;

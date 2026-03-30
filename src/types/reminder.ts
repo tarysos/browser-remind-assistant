@@ -7,7 +7,7 @@
 export type ReminderType = 'one_time' | 'recurring' | 'first_open' | 'site_trigger';
 
 /** 週期頻率 */
-export type Frequency = 'daily' | 'weekly';
+export type Frequency = 'daily' | 'weekly' | 'monthly';
 
 /** 星期（0=日, 1=一, ..., 6=六） */
 export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
@@ -18,7 +18,7 @@ export type TimeString = string;
 /** ISO 8601 日期時間字串 */
 export type ISODateTimeString = string;
 
-/** Period Key: YYYY-MM-DD 或 YYYY-Www */
+/** Period Key: YYYY-MM-DD 或 YYYY-Www 或 YYYY-MM */
 export type PeriodKey = string;
 
 // ============================================================
@@ -35,6 +35,8 @@ export interface OneTimeSchedule {
 export interface RecurringSchedule {
   frequency: Frequency;
   daysOfWeek: DayOfWeek[];
+  /** 每月幾號（1–31），僅 frequency='monthly' 時使用 */
+  dayOfMonth: number | null;
   timeOfDay: TimeString;
   timezone: string;
   startDate: ISODateTimeString | null;
