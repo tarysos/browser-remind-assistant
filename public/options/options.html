@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>提醒管理 — Browser Reminder Assistant</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div id="app">
+    <header class="header">
+      <h1>📋 Browser Reminder Assistant — 提醒管理</h1>
+    </header>
+
+    <main class="main">
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <input id="input-search" type="text" placeholder="搜尋提醒..." class="search-input">
+        <select id="filter-type" class="filter-select">
+          <option value="all">全部類型</option>
+          <option value="one_time">單次提醒</option>
+          <option value="recurring">週期提醒</option>
+          <option value="first_open">首次開啟</option>
+          <option value="site_trigger">網站情境</option>
+        </select>
+        <button id="btn-add" class="btn btn-primary">＋ 新增提醒</button>
+      </div>
+
+      <!-- Reminder List -->
+      <section id="section-list" class="section">
+        <h2>所有提醒</h2>
+        <table id="table-reminders" class="reminder-table">
+          <thead>
+            <tr>
+              <th>狀態</th>
+              <th>標題</th>
+              <th>類型</th>
+              <th>排程</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-reminders"></tbody>
+        </table>
+        <p id="empty-list" class="empty-hint">尚未建立任何提醒</p>
+      </section>
+
+      <!-- Add/Edit Form (hidden by default) -->
+      <section id="section-form" class="section" style="display: none;">
+        <h2 id="form-title">新增提醒</h2>
+        <form id="reminder-form" class="reminder-form">
+          <input type="hidden" id="form-id">
+
+          <label for="form-type">提醒類型</label>
+          <select id="form-type" required>
+            <option value="one_time">單次提醒</option>
+            <option value="recurring">週期提醒</option>
+            <option value="first_open">首次開啟提醒</option>
+            <option value="site_trigger">網站情境提醒</option>
+          </select>
+
+          <label for="form-reminder-title">標題</label>
+          <input id="form-reminder-title" type="text" required placeholder="提醒標題">
+
+          <label for="form-message">內容</label>
+          <textarea id="form-message" rows="2" placeholder="提醒內容（選填）"></textarea>
+
+          <!-- One-time fields -->
+          <fieldset id="fields-one-time" class="type-fields">
+            <legend>單次提醒設定</legend>
+            <label for="form-datetime">日期與時間</label>
+            <input id="form-datetime" type="datetime-local">
+          </fieldset>
+
+          <!-- Recurring fields -->
+          <fieldset id="fields-recurring" class="type-fields" style="display: none;">
+            <legend>週期提醒設定</legend>
+            <label for="form-frequency">頻率</label>
+            <select id="form-frequency">
+              <option value="daily">每天</option>
+              <option value="weekly">每週</option>
+            </select>
+            <label for="form-time">時間</label>
+            <input id="form-time" type="time">
+            <label>星期（每週時選擇）</label>
+            <div id="form-days" class="days-picker">
+              <label><input type="checkbox" value="1"> 一</label>
+              <label><input type="checkbox" value="2"> 二</label>
+              <label><input type="checkbox" value="3"> 三</label>
+              <label><input type="checkbox" value="4"> 四</label>
+              <label><input type="checkbox" value="5"> 五</label>
+              <label><input type="checkbox" value="6"> 六</label>
+              <label><input type="checkbox" value="0"> 日</label>
+            </div>
+          </fieldset>
+
+          <!-- First-open fields -->
+          <fieldset id="fields-first-open" class="type-fields" style="display: none;">
+            <legend>首次開啟提醒設定</legend>
+            <label for="form-cadence">週期</label>
+            <select id="form-cadence">
+              <option value="daily">每天</option>
+              <option value="weekly">每週</option>
+            </select>
+            <label>有效星期</label>
+            <div id="form-valid-days" class="days-picker">
+              <label><input type="checkbox" value="1"> 一</label>
+              <label><input type="checkbox" value="2"> 二</label>
+              <label><input type="checkbox" value="3"> 三</label>
+              <label><input type="checkbox" value="4"> 四</label>
+              <label><input type="checkbox" value="5"> 五</label>
+              <label><input type="checkbox" value="6"> 六</label>
+              <label><input type="checkbox" value="0"> 日</label>
+            </div>
+            <label for="form-window-start">有效時段開始</label>
+            <input id="form-window-start" type="time">
+            <label for="form-window-end">有效時段結束</label>
+            <input id="form-window-end" type="time">
+          </fieldset>
+
+          <!-- Site-trigger fields -->
+          <fieldset id="fields-site-trigger" class="type-fields" style="display: none;">
+            <legend>網站情境提醒設定</legend>
+            <label for="form-url-patterns">網站 URL 匹配模式</label>
+            <textarea id="form-url-patterns" rows="3" placeholder="每行一個，例如：&#10;*://mail.google.com/*&#10;*://*.notion.so/*&#10;*://github.com/*"></textarea>
+            <label for="form-site-cadence">觸發頻率</label>
+            <select id="form-site-cadence">
+              <option value="every_visit">每次造訪</option>
+              <option value="daily">每天首次造訪</option>
+              <option value="weekly">每週首次造訪</option>
+            </select>
+            <label>有效星期</label>
+            <div id="form-site-days" class="days-picker">
+              <label><input type="checkbox" value="1"> 一</label>
+              <label><input type="checkbox" value="2"> 二</label>
+              <label><input type="checkbox" value="3"> 三</label>
+              <label><input type="checkbox" value="4"> 四</label>
+              <label><input type="checkbox" value="5"> 五</label>
+              <label><input type="checkbox" value="6"> 六</label>
+              <label><input type="checkbox" value="0"> 日</label>
+            </div>
+            <label for="form-site-window-start">工作時段開始</label>
+            <input id="form-site-window-start" type="time">
+            <label for="form-site-window-end">工作時段結束</label>
+            <input id="form-site-window-end" type="time">
+          </fieldset>
+
+          <label class="checkbox-label">
+            <input id="form-catchup" type="checkbox" checked> 允許補提醒
+          </label>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">儲存</button>
+            <button type="button" id="btn-cancel" class="btn btn-secondary">取消</button>
+          </div>
+        </form>
+      </section>
+      <!-- History Section (collapsible) -->
+      <details id="section-history" class="section collapsible">
+        <summary class="collapsible-header">
+          <h2>📜 歷史紀錄</h2>
+          <span class="collapse-hint">點擊展開</span>
+        </summary>
+        <div class="collapsible-body">
+          <div class="toolbar">
+            <input id="history-search" type="text" placeholder="搜尋歷史..." class="search-input">
+            <select id="history-filter" class="filter-select">
+              <option value="all">全部事件</option>
+              <option value="triggered">已觸發</option>
+              <option value="completed">已完成</option>
+              <option value="snoozed">已延後</option>
+              <option value="skipped">已略過</option>
+              <option value="missed_catchup">補提醒</option>
+            </select>
+          </div>
+          <table id="table-history" class="reminder-table">
+            <thead>
+              <tr>
+                <th>時間</th>
+                <th>提醒</th>
+                <th>事件</th>
+                <th>來源</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-history"></tbody>
+          </table>
+          <p id="empty-history" class="empty-hint">尚無歷史紀錄</p>
+        </div>
+      </details>
+
+      <!-- Settings Section (collapsible) -->
+      <details id="section-settings" class="section collapsible">
+        <summary class="collapsible-header">
+          <h2>⚙️ 全域設定</h2>
+          <span class="collapse-hint">點擊展開</span>
+        </summary>
+        <div class="collapsible-body">
+          <div class="reminder-form">
+            <label for="setting-timezone">預設時區</label>
+            <input id="setting-timezone" type="text" readonly>
+
+            <label for="setting-quiet-start">安靜時段開始</label>
+            <input id="setting-quiet-start" type="time">
+
+            <label for="setting-quiet-end">安靜時段結束</label>
+            <input id="setting-quiet-end" type="time">
+
+            <label class="checkbox-label">
+              <input id="setting-catchup" type="checkbox" checked> 啟用補提醒
+            </label>
+
+            <label for="setting-badge">Badge 顯示</label>
+            <select id="setting-badge">
+              <option value="pending">未處理數量</option>
+              <option value="today">今日待辦數量</option>
+            </select>
+
+            <div class="form-actions">
+              <button id="btn-save-settings" class="btn btn-primary">儲存設定</button>
+            </div>
+          </div>
+        </div>
+      </details>
+    </main>
+  </div>
+
+  <script type="module" src="options.js"></script>
+</body>
+</html>

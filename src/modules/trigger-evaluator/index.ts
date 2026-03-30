@@ -1,0 +1,293 @@
+// ============================================================
+// trigger-evaluator — 判斷提醒是否應被觸發
+// 對應 SA §6.2 + §6.3 + §8 trigger-evaluator
+// ============================================================
+
+import type {
+  Reminder,
+  OneTimeReminder,
+  RecurringReminder,
+  FirstOpenReminder,
+  SiteTriggerReminder,
+  DayOfWeek,
+  PeriodKey,
+  RecurringState,
+  OneTimeState,
+} from '../../types/reminder.js';
+import type { TriggerSource } from '../../types/history.js';
+
+// ============================================================
+// 觸發判斷結果
+// ============================================================
+
+export interface TriggerResult {
+  shouldTrigger: boolean;
+  reason?: 'time_match' | 'first_open' | 'missed_catchup' | 'site_match';
+  source: TriggerSource;
+}
+
+// ============================================================
+// Period Key 計算 (SA §5.5, §6.3)
+// ============================================================
+
+/** 取得今日的 daily period key: YYYY-MM-DD */
+export function getDailyPeriodKey(date: Date = new Date()): PeriodKey {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/** 取得本週的 weekly period key: YYYY-Www */
+export function getWeeklyPeriodKey(date: Date = new Date()): PeriodKey {
+  // ISO week number 計算
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+}
+
+/** 依頻率取得對應的 period key */
+export function getPeriodKey(frequency: 'daily' | 'weekly', date: Date = new Date()): PeriodKey {
+  return frequency === 'daily' ? getDailyPeriodKey(date) : getWeeklyPeriodKey(date);
+}
+
+// ============================================================
+// 時間工具
+// ============================================================
+
+/** 判斷目前時間是否在指定時段內 */
+export function isWithinTimeWindow(startTime: string, endTime: string, now: Date = new Date()): boolean {
+  const [startH, startM] = startTime.split(':').map(Number);
+  const [endH, endM] = endTime.split(':').map(Number);
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const startMinutes = startH * 60 + startM;
+  const endMinutes = endH * 60 + endM;
+  return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+}
+
+// ============================================================
+// 共用檢查 (SA §6.2.2)
+// ============================================================
+
+/** 檢查是否在 snooze 中 */
+function isInSnooze(snoozeUntil: string | null): boolean {
+  if (!snoozeUntil) return false;
+  return new Date(snoozeUntil).getTime() > Date.now();
+}
+
+// ============================================================
+// 各類型判斷
+// ============================================================
+
+/** 單次提醒判斷 */
+function evaluateOneTime(reminder: OneTimeReminder, source: TriggerSource): TriggerResult {
+  const { state, schedule } = reminder;
+  const no: TriggerResult = { shouldTrigger: false, source };
+
+  // 已觸發且已完成
+  if (state.completedAt) return no;
+  // 在 snooze 中
+  if (isInSnooze(state.snoozeUntil)) return no;
+
+  const targetTime = new Date(schedule.dateTime).getTime();
+  const now = Date.now();
+
+  // 已過時間，檢查是否已觸發過
+  if (state.triggeredAt) return no;
+
+  // 時間已到或已過（補提醒）
+  if (now >= targetTime) {
+    const reason = source === 'catchup' ? 'missed_catchup' : 'time_match';
+    return { shouldTrigger: true, reason, source };
+  }
+
+  return no;
+}
+
+/** 週期提醒判斷 */
+function evaluateRecurring(reminder: RecurringReminder, source: TriggerSource): TriggerResult {
+  const { state, schedule } = reminder;
+  const no: TriggerResult = { shouldTrigger: false, source };
+
+  if (state.completedAt) return no;
+  if (isInSnooze(state.snoozeUntil)) return no;
+
+  const periodKey = getPeriodKey(schedule.frequency);
+
+  // 本 period 已提醒過
+  if (state.lastTriggeredPeriodKey === periodKey) return no;
+
+  const now = new Date();
+  const [hours, minutes] = schedule.timeOfDay.split(':').map(Number);
+  const todayTarget = new Date(now);
+  todayTarget.setHours(hours, minutes, 0, 0);
+
+  // weekly：檢查星期
+  if (schedule.frequency === 'weekly') {
+    const dayOfWeek = now.getDay() as DayOfWeek;
+    if (!schedule.daysOfWeek.includes(dayOfWeek)) return no;
+  }
+
+  // 時間已到
+  if (now.getTime() >= todayTarget.getTime()) {
+    const reason = source === 'catchup' ? 'missed_catchup' : 'time_match';
+    return { shouldTrigger: true, reason, source };
+  }
+
+  return no;
+}
+
+/** 首次開啟提醒判斷 (SA §6.3) */
+function evaluateFirstOpen(reminder: FirstOpenReminder, source: TriggerSource): TriggerResult {
+  const { state, schedule, rule } = reminder;
+  const no: TriggerResult = { shouldTrigger: false, source };
+
+  if (state.completedAt) return no;
+  if (isInSnooze(state.snoozeUntil)) return no;
+
+  const now = new Date();
+  const periodKey = getPeriodKey(schedule.cadence, now);
+
+  // 本 period 已提醒過
+  if (state.lastTriggeredPeriodKey === periodKey) return no;
+
+  // 檢查星期
+  const dayOfWeek = now.getDay() as DayOfWeek;
+  if (rule.validDaysOfWeek.length > 0 && !rule.validDaysOfWeek.includes(dayOfWeek)) return no;
+
+  // 檢查有效時段
+  if (rule.timeWindowStart && rule.timeWindowEnd) {
+    if (!isWithinTimeWindow(rule.timeWindowStart, rule.timeWindowEnd, now)) return no;
+  }
+
+  return { shouldTrigger: true, reason: 'first_open', source };
+}
+
+// ============================================================
+// URL Pattern Matching（SA §12.3）
+// ============================================================
+
+/**
+ * 將 glob URL pattern 轉為 RegExp
+ * 支援格式例如: "*://mail.google.com/*", "*://*.notion.so/*"
+ */
+export function urlPatternToRegExp(pattern: string): RegExp {
+  // 1. 先將 * 替換為唯一佔位符
+  const placeholder = '__WILDCARD__';
+  const withPlaceholder = pattern.replace(/\*/g, placeholder);
+  // 2. 跳脫所有 regex 特殊字元
+  const escaped = withPlaceholder.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
+  // 3. 將佔位符還原為 .*
+  const regexStr = escaped.replace(new RegExp(placeholder, 'g'), '.*');
+  return new RegExp(`^${regexStr}$`, 'i');
+}
+
+/** 檢查 URL 是否匹配任一 pattern */
+export function matchesUrlPatterns(url: string, patterns: string[]): boolean {
+  if (patterns.length === 0) return false;
+  return patterns.some((p) => urlPatternToRegExp(p).test(url));
+}
+
+// ============================================================
+// Site Trigger 評估（SA §12.3）
+// ============================================================
+
+/** 網站情境提醒判斷 */
+function evaluateSiteTrigger(
+  reminder: SiteTriggerReminder,
+  source: TriggerSource,
+  currentUrl?: string,
+): TriggerResult {
+  const { state, schedule, rule } = reminder;
+  const no: TriggerResult = { shouldTrigger: false, source };
+
+  if (state.completedAt) return no;
+  if (state.snoozeUntil && new Date(state.snoozeUntil).getTime() > Date.now()) return no;
+
+  // URL 匹配
+  if (!currentUrl || !matchesUrlPatterns(currentUrl, rule.urlPatterns)) return no;
+
+  const now = new Date();
+
+  // 檢查星期
+  const dayOfWeek = now.getDay() as DayOfWeek;
+  if (rule.validDaysOfWeek.length > 0 && !rule.validDaysOfWeek.includes(dayOfWeek)) return no;
+
+  // 檢查工作時段
+  if (rule.timeWindowStart && rule.timeWindowEnd) {
+    if (!isWithinTimeWindow(rule.timeWindowStart, rule.timeWindowEnd, now)) return no;
+  }
+
+  // 頻率控制
+  if (schedule.cadence !== 'every_visit') {
+    const periodKey = getPeriodKey(schedule.cadence, now);
+    if (state.lastTriggeredPeriodKey === periodKey) return no;
+  }
+
+  return { shouldTrigger: true, reason: 'site_match', source };
+}
+
+// ============================================================
+// 主入口：評估單筆提醒 (SA §6.2.2 Trigger Evaluator 順序)
+// ============================================================
+
+/**
+ * 評估一筆提醒是否應被觸發
+ * @param reminder 待評估的提醒
+ * @param source 觸發來源
+ * @param currentUrl 目前分頁的 URL（僅 site_trigger 需要）
+ */
+export function evaluate(reminder: Reminder, source: TriggerSource, currentUrl?: string): TriggerResult {
+  const no: TriggerResult = { shouldTrigger: false, source };
+
+  // 1. 是否啟用
+  if (!reminder.enabled) return no;
+
+  // 2-7. 依類型判斷
+  switch (reminder.type) {
+    case 'one_time':
+      return evaluateOneTime(reminder, source);
+    case 'recurring':
+      return evaluateRecurring(reminder, source);
+    case 'first_open':
+      return evaluateFirstOpen(reminder, source);
+    case 'site_trigger':
+      return evaluateSiteTrigger(reminder, source, currentUrl);
+    default:
+      return no;
+  }
+}
+
+/**
+ * 批次評估所有提醒，回傳需觸發的清單
+ */
+export function evaluateAll(
+  reminders: Reminder[],
+  source: TriggerSource,
+  currentUrl?: string,
+): Array<{ reminder: Reminder; result: TriggerResult }> {
+  const triggered: Array<{ reminder: Reminder; result: TriggerResult }> = [];
+
+  for (const reminder of reminders) {
+    const result = evaluate(reminder, source, currentUrl);
+    if (result.shouldTrigger) {
+      triggered.push({ reminder, result });
+    }
+  }
+
+  return triggered;
+}
+
+/**
+ * 檢查是否有過期但未處理的提醒（補提醒用）
+ */
+export function findMissedReminders(reminders: Reminder[]): Reminder[] {
+  return reminders.filter((r) => {
+    if (!r.enabled || !r.rule.allowMissedCatchup) return false;
+    const result = evaluate(r, 'catchup');
+    return result.shouldTrigger && result.reason === 'missed_catchup';
+  });
+}

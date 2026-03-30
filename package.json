@@ -1,0 +1,31 @@
+{
+  "name": "browser-remind-assistant",
+  "version": "1.0.0",
+  "description": "瀏覽器工作流中的輕量提醒助手",
+  "scripts": {
+    "build": "tsc && node scripts/copy-public.mjs",
+    "build:ts": "tsc",
+    "watch": "tsc --watch",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tarysos/browser-remind-assistant.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/tarysos/browser-remind-assistant/issues"
+  },
+  "homepage": "https://github.com/tarysos/browser-remind-assistant#readme",
+  "devDependencies": {
+    "@anthropic-ai/sdk": "^0.80.0",
+    "@types/chrome": "^0.1.38",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.2"
+  }
+}

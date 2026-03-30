@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Browser Reminder Assistant</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div id="app">
+    <header class="header">
+      <h1>📋 提醒助手</h1>
+      <button id="btn-add" class="btn btn-primary" title="新增提醒">＋</button>
+    </header>
+
+    <section id="section-pending" class="section">
+      <h2>今日待處理</h2>
+      <ul id="list-pending" class="reminder-list"></ul>
+      <p id="empty-pending" class="empty-hint">目前沒有待處理的提醒 🎉</p>
+    </section>
+
+    <section id="section-upcoming" class="section">
+      <h2>即將到來</h2>
+      <ul id="list-upcoming" class="reminder-list"></ul>
+    </section>
+
+    <section id="section-snoozed" class="section">
+      <h2>已延後</h2>
+      <ul id="list-snoozed" class="reminder-list"></ul>
+    </section>
+
+    <footer class="footer">
+      <a id="link-options" href="#">管理所有提醒 →</a>
+    </footer>
+  </div>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

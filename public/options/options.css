@@ -1,0 +1,222 @@
+/* ==================== Reset & Base ==================== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  color: #1a1a1a;
+  background: #f0f2f5;
+}
+
+/* ==================== Header ==================== */
+.header {
+  background: #4a90d9;
+  color: #fff;
+  padding: 16px 24px;
+}
+.header h1 { font-size: 18px; font-weight: 600; }
+
+/* ==================== Main ==================== */
+.main { max-width: 900px; margin: 0 auto; padding: 20px 24px; }
+
+/* ==================== Toolbar ==================== */
+.toolbar {
+  display: flex; gap: 10px; align-items: center;
+  margin-bottom: 16px; flex-wrap: wrap;
+}
+.search-input {
+  flex: 1; min-width: 180px; padding: 8px 12px;
+  border: 1px solid #ccc; border-radius: 6px; font-size: 14px;
+}
+.filter-select {
+  padding: 8px 12px; border: 1px solid #ccc;
+  border-radius: 6px; font-size: 14px;
+}
+
+/* ==================== Buttons ==================== */
+.btn {
+  border: none; border-radius: 6px; cursor: pointer;
+  font-size: 14px; padding: 8px 16px;
+}
+.btn-primary { background: #4a90d9; color: #fff; }
+.btn-primary:hover { background: #3a7bc8; }
+.btn-secondary { background: #e0e0e0; color: #333; }
+.btn-secondary:hover { background: #d0d0d0; }
+.btn-danger { background: #e74c3c; color: #fff; }
+.btn-danger:hover { background: #c0392b; }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+
+/* ==================== Section ==================== */
+.section { margin-bottom: 24px; }
+.section h2 {
+  font-size: 15px; font-weight: 600;
+  color: #444; margin-bottom: 12px;
+  border-bottom: 2px solid #4a90d9;
+  padding-bottom: 6px;
+}
+
+/* ==================== Table ==================== */
+.reminder-table {
+  width: 100%; border-collapse: collapse;
+  background: #fff; border-radius: 8px;
+  overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+.reminder-table th, .reminder-table td {
+  padding: 10px 14px; text-align: left;
+  border-bottom: 1px solid #eee;
+}
+.reminder-table th {
+  background: #fafafa; font-weight: 600;
+  font-size: 13px; color: #666;
+}
+.reminder-table td { font-size: 14px; vertical-align: top; }
+
+/* Schedule column — multi-line detail */
+.schedule-detail {
+  display: flex; flex-direction: column; gap: 2px;
+}
+.schedule-main {
+  font-weight: 500; color: #1a1a1a;
+}
+.schedule-sub {
+  font-size: 12px; color: #888;
+}
+
+/* Action buttons — split edit vs destructive */
+.action-group {
+  display: inline-flex; gap: 4px; align-items: center;
+}
+.action-separator {
+  display: inline-block; width: 1px; height: 20px;
+  background: #ddd; margin: 0 4px;
+}
+
+/* ==================== Form ==================== */
+.reminder-form {
+  background: #fff; border-radius: 8px;
+  padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+.reminder-form label {
+  display: block; margin-top: 12px;
+  font-weight: 500; font-size: 13px; color: #555;
+}
+.reminder-form input[type="text"],
+.reminder-form input[type="datetime-local"],
+.reminder-form input[type="time"],
+.reminder-form textarea,
+.reminder-form select {
+  width: 100%; padding: 8px 10px; margin-top: 4px;
+  border: 1px solid #ccc; border-radius: 6px;
+  font-size: 14px; font-family: inherit;
+}
+.type-fields {
+  border: 1px solid #e0e0e0; border-radius: 6px;
+  padding: 12px; margin-top: 12px;
+}
+.type-fields legend {
+  font-weight: 600; font-size: 13px;
+  color: #4a90d9; padding: 0 6px;
+}
+.days-picker {
+  display: flex; gap: 10px; margin-top: 6px; flex-wrap: wrap;
+}
+.days-picker label {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-weight: 400; font-size: 14px;
+}
+.checkbox-label {
+  display: flex !important; align-items: center;
+  gap: 6px; margin-top: 14px; font-weight: 400 !important;
+}
+.form-actions {
+  display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end;
+}
+
+/* ==================== Empty Hint ==================== */
+.empty-hint {
+  text-align: center; color: #aaa;
+  font-size: 14px; padding: 30px 0;
+}
+
+/* ==================== Status Badge ==================== */
+.status-badge {
+  display: inline-block; padding: 2px 8px;
+  border-radius: 10px; font-size: 12px; font-weight: 500;
+}
+.status-badge.enabled { background: #d4edda; color: #155724; }
+.status-badge.disabled { background: #f8d7da; color: #721c24; }
+
+/* ==================== Collapsible Sections ==================== */
+.collapsible {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+
+.collapsible-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  background: #fafafa;
+  border-bottom: 1px solid #eee;
+  transition: background 0.15s;
+}
+
+.collapsible-header:hover {
+  background: #f0f2f5;
+}
+
+.collapsible-header::-webkit-details-marker {
+  display: none;
+}
+
+.collapsible-header h2 {
+  font-size: 15px;
+  font-weight: 600;
+  color: #444;
+  margin: 0;
+  border: none;
+  padding: 0;
+}
+
+.collapse-hint {
+  font-size: 12px;
+  color: #aaa;
+  transition: opacity 0.15s;
+}
+
+details[open] > .collapsible-header .collapse-hint {
+  opacity: 0;
+}
+
+.collapsible-body {
+  padding: 16px 20px;
+}
+
+.collapsible-body .toolbar {
+  margin-bottom: 12px;
+}
+
+.collapsible-body .reminder-form {
+  box-shadow: none;
+}
+
+/* ==================== Type Badge ==================== */
+.type-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.type-badge.one_time { background: #e8f4fd; color: #1a73e8; }
+.type-badge.recurring { background: #fef3e2; color: #e67e22; }
+.type-badge.first_open { background: #e8f5e9; color: #2e7d32; }
+.type-badge.site_trigger { background: #f3e5f5; color: #7b1fa2; }
