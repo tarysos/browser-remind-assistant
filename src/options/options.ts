@@ -220,7 +220,7 @@ function buildReminderFromForm(): Reminder {
       schedule: {
         frequency: formFrequency.value as 'daily' | 'weekly',
         daysOfWeek: getCheckedDays('form-days'),
-        timeOfDay: formTime.value,
+        timeOfDay: getTimeValue(formTime),
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         startDate: null, endDate: null,
       },
@@ -239,8 +239,8 @@ function buildReminderFromForm(): Reminder {
       rule: {
         urlPatterns,
         validDaysOfWeek: getCheckedDays('form-site-days'),
-        timeWindowStart: formSiteWindowStart.value || '00:00',
-        timeWindowEnd: formSiteWindowEnd.value || '23:59',
+        timeWindowStart: getTimeValue(formSiteWindowStart) || '00:00',
+        timeWindowEnd: getTimeValue(formSiteWindowEnd) || '23:59',
         allowMissedCatchup: formCatchup.checked,
       },
       state: { lastTriggeredAt: null, lastTriggeredPeriodKey: null, snoozeUntil: null, completedAt: null },
@@ -253,8 +253,8 @@ function buildReminderFromForm(): Reminder {
       rule: {
         triggerOn: 'browser_activity' as const,
         validDaysOfWeek: getCheckedDays('form-valid-days'),
-        timeWindowStart: formWindowStart.value || '00:00',
-        timeWindowEnd: formWindowEnd.value || '23:59',
+        timeWindowStart: getTimeValue(formWindowStart) || '00:00',
+        timeWindowEnd: getTimeValue(formWindowEnd) || '23:59',
         sites: [],
         allowMissedCatchup: formCatchup.checked,
       },
@@ -334,22 +334,22 @@ function populateForm(r: Reminder): void {
   } else if (r.type === 'recurring') {
     const s = (r as RecurringReminder).schedule;
     formFrequency.value = s.frequency;
-    formTime.value = s.timeOfDay;
+    setTimeDisplay(formTime, s.timeOfDay);
     setCheckedDays('form-days', s.daysOfWeek);
   } else if (r.type === 'site_trigger') {
     const s = (r as SiteTriggerReminder).schedule;
     const ru = (r as SiteTriggerReminder).rule;
     formUrlPatterns.value = ru.urlPatterns.join('\n');
     formSiteCadence.value = s.cadence;
-    formSiteWindowStart.value = ru.timeWindowStart;
-    formSiteWindowEnd.value = ru.timeWindowEnd;
+    setTimeDisplay(formSiteWindowStart, ru.timeWindowStart);
+    setTimeDisplay(formSiteWindowEnd, ru.timeWindowEnd);
     setCheckedDays('form-site-days', ru.validDaysOfWeek);
   } else {
     const s = (r as FirstOpenReminder).schedule;
     const ru = (r as FirstOpenReminder).rule;
     formCadence.value = s.cadence;
-    formWindowStart.value = ru.timeWindowStart;
-    formWindowEnd.value = ru.timeWindowEnd;
+    setTimeDisplay(formWindowStart, ru.timeWindowStart);
+    setTimeDisplay(formWindowEnd, ru.timeWindowEnd);
     setCheckedDays('form-valid-days', ru.validDaysOfWeek);
   }
   showForm('編輯提醒');
@@ -438,21 +438,101 @@ const btnSaveSettings = document.getElementById('btn-save-settings') as HTMLButt
 async function loadSettings(): Promise<void> {
   const s = await getSettings();
   settingTimezone.value = s.defaultTimezone;
-  settingQuietStart.value = s.quietHoursStart ?? '';
-  settingQuietEnd.value = s.quietHoursEnd ?? '';
+  setTimeDisplay(settingQuietStart, s.quietHoursStart ?? '');
+  setTimeDisplay(settingQuietEnd, s.quietHoursEnd ?? '');
   settingCatchup.checked = s.enableMissedCatchup;
   settingBadge.value = s.badgeDisplay;
 }
 
 btnSaveSettings.addEventListener('click', async () => {
   await updateSettings({
-    quietHoursStart: settingQuietStart.value || null,
-    quietHoursEnd: settingQuietEnd.value || null,
+    quietHoursStart: getTimeValue(settingQuietStart) || null,
+    quietHoursEnd: getTimeValue(settingQuietEnd) || null,
     enableMissedCatchup: settingCatchup.checked,
     badgeDisplay: settingBadge.value as 'pending' | 'today',
   });
   alert('設定已儲存');
 });
+
+// ============================================================
+// 時間格式切換（24/12 小時制）
+// ============================================================
+
+const btn24 = document.getElementById('btn-time-24') as HTMLButtonElement;
+const btn12 = document.getElementById('btn-time-12') as HTMLButtonElement;
+
+let timeFormat: '24' | '12' = (localStorage.getItem('timeFormat') as '24' | '12') || '24';
+
+/** 24 小時制 → 12 小時制 */
+function to12h(time24: string): string {
+  if (!time24 || !time24.includes(':')) return time24;
+  const [h, m] = time24.split(':').map(Number);
+  const period = h >= 12 ? '下午' : '上午';
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${period} ${h12}:${String(m).padStart(2, '0')}`;
+}
+
+/** 12 小時制 → 24 小時制 */
+function to24h(time12: string): string {
+  if (!time12) return time12;
+  // 若已經是 HH:mm 格式就直接回傳
+  if (/^\d{1,2}:\d{2}$/.test(time12.trim())) return time12.trim();
+  const match = time12.match(/(上午|下午|AM|PM)\s*(\d{1,2}):(\d{2})/i);
+  if (!match) return time12;
+  const isPM = /下午|PM/i.test(match[1]);
+  let h = parseInt(match[2], 10);
+  const m = match[3];
+  if (isPM && h < 12) h += 12;
+  if (!isPM && h === 12) h = 0;
+  return `${String(h).padStart(2, '0')}:${m}`;
+}
+
+/** 取得輸入框的 24h 值（不管目前顯示格式） */
+function getTimeValue(input: HTMLInputElement): string {
+  return timeFormat === '12' ? to24h(input.value) : input.value;
+}
+
+/** 設定輸入框的值（依目前格式轉換顯示） */
+function setTimeDisplay(input: HTMLInputElement, time24: string): void {
+  input.value = timeFormat === '12' ? to12h(time24) : time24;
+}
+
+function applyTimeFormat(format: '24' | '12'): void {
+  // 先把所有輸入框的值轉回 24h
+  const inputs = document.querySelectorAll<HTMLInputElement>('.time-input');
+  const values24: string[] = [];
+  inputs.forEach(input => {
+    values24.push(getTimeValue(input));
+  });
+
+  timeFormat = format;
+  localStorage.setItem('timeFormat', format);
+
+  // 更新按鈕狀態
+  btn24.classList.toggle('active', format === '24');
+  btn12.classList.toggle('active', format === '12');
+
+  // 重新設定顯示值和 placeholder
+  inputs.forEach((input, i) => {
+    if (format === '24') {
+      input.placeholder = 'HH:mm';
+      input.pattern = '[0-2]?[0-9]:[0-5][0-9]';
+      input.classList.remove('format-12');
+      input.classList.add('format-24');
+    } else {
+      input.placeholder = '上午 9:00';
+      input.pattern = '(上午|下午|AM|PM)\\s*\\d{1,2}:\\d{2}';
+      input.classList.remove('format-24');
+      input.classList.add('format-12');
+    }
+    if (values24[i]) {
+      setTimeDisplay(input, values24[i]);
+    }
+  });
+}
+
+btn24.addEventListener('click', () => applyTimeFormat('24'));
+btn12.addEventListener('click', () => applyTimeFormat('12'));
 
 // ============================================================
 // 初始化
@@ -461,3 +541,4 @@ btnSaveSettings.addEventListener('click', async () => {
 renderList();
 renderHistory();
 loadSettings();
+applyTimeFormat(timeFormat);

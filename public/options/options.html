@@ -13,6 +13,13 @@
     </header>
 
     <main class="main">
+      <!-- Time format toggle -->
+      <div class="time-format-bar">
+        <span>時間格式：</span>
+        <button id="btn-time-24" class="btn btn-sm time-fmt-btn active" data-format="24">24 小時制</button>
+        <button id="btn-time-12" class="btn btn-sm time-fmt-btn" data-format="12">12 小時制</button>
+      </div>
+
       <!-- Toolbar -->
       <div class="toolbar">
         <input id="input-search" type="text" placeholder="搜尋提醒..." class="search-input">
@@ -80,7 +87,7 @@
               <option value="weekly">每週</option>
             </select>
             <label for="form-time">時間</label>
-            <input id="form-time" type="time">
+            <input id="form-time" type="text" class="time-input" placeholder="HH:mm" pattern="[0-2][0-9]:[0-5][0-9]">
             <label>星期（每週時選擇）</label>
             <div id="form-days" class="days-picker">
               <label><input type="checkbox" value="1"> 一</label>
@@ -112,9 +119,9 @@
               <label><input type="checkbox" value="0"> 日</label>
             </div>
             <label for="form-window-start">有效時段開始</label>
-            <input id="form-window-start" type="time">
+            <input id="form-window-start" type="text" class="time-input" placeholder="HH:mm" pattern="[0-2][0-9]:[0-5][0-9]">
             <label for="form-window-end">有效時段結束</label>
-            <input id="form-window-end" type="time">
+            <input id="form-window-end" type="text" class="time-input" placeholder="HH:mm" pattern="[0-2][0-9]:[0-5][0-9]">
           </fieldset>
 
           <!-- Site-trigger fields -->
@@ -139,9 +146,9 @@
               <label><input type="checkbox" value="0"> 日</label>
             </div>
             <label for="form-site-window-start">工作時段開始</label>
-            <input id="form-site-window-start" type="time">
+            <input id="form-site-window-start" type="text" class="time-input" placeholder="HH:mm" pattern="[0-2][0-9]:[0-5][0-9]">
             <label for="form-site-window-end">工作時段結束</label>
-            <input id="form-site-window-end" type="time">
+            <input id="form-site-window-end" type="text" class="time-input" placeholder="HH:mm" pattern="[0-2][0-9]:[0-5][0-9]">
           </fieldset>
 
           <label class="checkbox-label">
@@ -199,10 +206,10 @@
             <input id="setting-timezone" type="text" readonly>
 
             <label for="setting-quiet-start">安靜時段開始</label>
-            <input id="setting-quiet-start" type="time">
+            <input id="setting-quiet-start" type="text" class="time-input" placeholder="HH:mm" pattern="[0-2][0-9]:[0-5][0-9]">
 
             <label for="setting-quiet-end">安靜時段結束</label>
-            <input id="setting-quiet-end" type="time">
+            <input id="setting-quiet-end" type="text" class="time-input" placeholder="HH:mm" pattern="[0-2][0-9]:[0-5][0-9]">
 
             <label class="checkbox-label">
               <input id="setting-catchup" type="checkbox" checked> 啟用補提醒
