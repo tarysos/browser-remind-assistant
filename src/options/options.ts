@@ -455,13 +455,8 @@ btnSaveSettings.addEventListener('click', async () => {
 });
 
 // ============================================================
-// 時間格式切換（24/12 小時制）
+// 時間格式切換（每個輸入框獨立 24/12 小時制）
 // ============================================================
-
-const btn24 = document.getElementById('btn-time-24') as HTMLButtonElement;
-const btn12 = document.getElementById('btn-time-12') as HTMLButtonElement;
-
-let timeFormat: '24' | '12' = (localStorage.getItem('timeFormat') as '24' | '12') || '24';
 
 /** 24 小時制 → 12 小時制 */
 function to12h(time24: string): string {
@@ -475,7 +470,6 @@ function to12h(time24: string): string {
 /** 12 小時制 → 24 小時制 */
 function to24h(time12: string): string {
   if (!time12) return time12;
-  // 若已經是 HH:mm 格式就直接回傳
   if (/^\d{1,2}:\d{2}$/.test(time12.trim())) return time12.trim();
   const match = time12.match(/(上午|下午|AM|PM)\s*(\d{1,2}):(\d{2})/i);
   if (!match) return time12;
@@ -487,52 +481,62 @@ function to24h(time12: string): string {
   return `${String(h).padStart(2, '0')}:${m}`;
 }
 
-/** 取得輸入框的 24h 值（不管目前顯示格式） */
+/** 取得輸入框的 24h 值（根據該輸入框目前的 data-format） */
 function getTimeValue(input: HTMLInputElement): string {
-  return timeFormat === '12' ? to24h(input.value) : input.value;
+  return input.dataset.format === '12' ? to24h(input.value) : input.value;
 }
 
-/** 設定輸入框的值（依目前格式轉換顯示） */
+/** 設定輸入框的值（根據該輸入框目前的 data-format） */
 function setTimeDisplay(input: HTMLInputElement, time24: string): void {
-  input.value = timeFormat === '12' ? to12h(time24) : time24;
+  input.value = input.dataset.format === '12' ? to12h(time24) : time24;
 }
 
-function applyTimeFormat(format: '24' | '12'): void {
-  // 先把所有輸入框的值轉回 24h
-  const inputs = document.querySelectorAll<HTMLInputElement>('.time-input');
-  const values24: string[] = [];
-  inputs.forEach(input => {
-    values24.push(getTimeValue(input));
-  });
+/** 切換單一輸入框的格式 */
+function toggleInputFormat(inputId: string): void {
+  const input = document.getElementById(inputId) as HTMLInputElement;
+  const btn = document.querySelector<HTMLButtonElement>(`.time-fmt-toggle[data-target="${inputId}"]`);
+  if (!input || !btn) return;
 
-  timeFormat = format;
-  localStorage.setItem('timeFormat', format);
+  // 先取得目前的 24h 值
+  const value24 = getTimeValue(input);
 
-  // 更新按鈕狀態
-  btn24.classList.toggle('active', format === '24');
-  btn12.classList.toggle('active', format === '12');
+  // 切換格式
+  const currentFormat = input.dataset.format || '24';
+  const newFormat = currentFormat === '24' ? '12' : '24';
+  input.dataset.format = newFormat;
 
-  // 重新設定顯示值和 placeholder
-  inputs.forEach((input, i) => {
-    if (format === '24') {
-      input.placeholder = 'HH:mm';
-      input.pattern = '[0-2]?[0-9]:[0-5][0-9]';
-      input.classList.remove('format-12');
-      input.classList.add('format-24');
-    } else {
-      input.placeholder = '上午 9:00';
-      input.pattern = '(上午|下午|AM|PM)\\s*\\d{1,2}:\\d{2}';
-      input.classList.remove('format-24');
-      input.classList.add('format-12');
-    }
-    if (values24[i]) {
-      setTimeDisplay(input, values24[i]);
-    }
-  });
+  // 更新按鈕文字與樣式
+  btn.textContent = newFormat === '24' ? '24h' : '12h';
+  btn.classList.toggle('is-12h', newFormat === '12');
+
+  // 更新 placeholder
+  if (newFormat === '24') {
+    input.placeholder = input.dataset.ph24 || '14:30';
+  } else {
+    input.placeholder = input.dataset.ph12 || '下午 2:30';
+  }
+
+  // 轉換顯示值
+  if (value24) {
+    setTimeDisplay(input, value24);
+  }
 }
 
-btn24.addEventListener('click', () => applyTimeFormat('24'));
-btn12.addEventListener('click', () => applyTimeFormat('12'));
+// 為所有 time-input 設定 12h placeholder
+document.querySelectorAll<HTMLInputElement>('.time-input').forEach(input => {
+  const ph24 = input.placeholder;
+  input.dataset.ph24 = ph24;
+  // 將 24h placeholder 轉為 12h 版本
+  input.dataset.ph12 = to12h(ph24);
+});
+
+// 事件委派：點擊任何 toggle 按鈕
+document.addEventListener('click', (e) => {
+  const btn = (e.target as HTMLElement).closest('.time-fmt-toggle') as HTMLButtonElement | null;
+  if (btn) {
+    toggleInputFormat(btn.dataset.target!);
+  }
+});
 
 // ============================================================
 // 初始化
@@ -541,4 +545,3 @@ btn12.addEventListener('click', () => applyTimeFormat('12'));
 renderList();
 renderHistory();
 loadSettings();
-applyTimeFormat(timeFormat);

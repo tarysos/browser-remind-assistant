@@ -13,13 +13,6 @@
     </header>
 
     <main class="main">
-      <!-- Time format toggle -->
-      <div class="time-format-bar">
-        <span>時間格式：</span>
-        <button id="btn-time-24" class="btn btn-sm time-fmt-btn active" data-format="24">24 小時制</button>
-        <button id="btn-time-12" class="btn btn-sm time-fmt-btn" data-format="12">12 小時制</button>
-      </div>
-
       <!-- Toolbar -->
       <div class="toolbar">
         <input id="input-search" type="text" placeholder="搜尋提醒..." class="search-input">
@@ -87,7 +80,10 @@
               <option value="weekly">每週</option>
             </select>
             <label for="form-time">時間</label>
-            <input id="form-time" type="text" class="time-input" placeholder="HH:mm" pattern="[0-2][0-9]:[0-5][0-9]">
+            <div class="time-input-group">
+              <input id="form-time" type="text" class="time-input" placeholder="14:30" data-format="24">
+              <button type="button" class="time-fmt-toggle" data-target="form-time" title="切換 12/24 小時制">24h</button>
+            </div>
             <label>星期（每週時選擇）</label>
             <div id="form-days" class="days-picker">
               <label><input type="checkbox" value="1"> 一</label>
@@ -119,9 +115,15 @@
               <label><input type="checkbox" value="0"> 日</label>
             </div>
             <label for="form-window-start">有效時段開始</label>
-            <input id="form-window-start" type="text" class="time-input" placeholder="HH:mm" pattern="[0-2][0-9]:[0-5][0-9]">
+            <div class="time-input-group">
+              <input id="form-window-start" type="text" class="time-input" placeholder="09:00" data-format="24">
+              <button type="button" class="time-fmt-toggle" data-target="form-window-start" title="切換 12/24 小時制">24h</button>
+            </div>
             <label for="form-window-end">有效時段結束</label>
-            <input id="form-window-end" type="text" class="time-input" placeholder="HH:mm" pattern="[0-2][0-9]:[0-5][0-9]">
+            <div class="time-input-group">
+              <input id="form-window-end" type="text" class="time-input" placeholder="18:00" data-format="24">
+              <button type="button" class="time-fmt-toggle" data-target="form-window-end" title="切換 12/24 小時制">24h</button>
+            </div>
           </fieldset>
 
           <!-- Site-trigger fields -->
@@ -146,9 +148,15 @@
               <label><input type="checkbox" value="0"> 日</label>
             </div>
             <label for="form-site-window-start">工作時段開始</label>
-            <input id="form-site-window-start" type="text" class="time-input" placeholder="HH:mm" pattern="[0-2][0-9]:[0-5][0-9]">
+            <div class="time-input-group">
+              <input id="form-site-window-start" type="text" class="time-input" placeholder="09:00" data-format="24">
+              <button type="button" class="time-fmt-toggle" data-target="form-site-window-start" title="切換 12/24 小時制">24h</button>
+            </div>
             <label for="form-site-window-end">工作時段結束</label>
-            <input id="form-site-window-end" type="text" class="time-input" placeholder="HH:mm" pattern="[0-2][0-9]:[0-5][0-9]">
+            <div class="time-input-group">
+              <input id="form-site-window-end" type="text" class="time-input" placeholder="18:00" data-format="24">
+              <button type="button" class="time-fmt-toggle" data-target="form-site-window-end" title="切換 12/24 小時制">24h</button>
+            </div>
           </fieldset>
 
           <label class="checkbox-label">
@@ -206,10 +214,16 @@
             <input id="setting-timezone" type="text" readonly>
 
             <label for="setting-quiet-start">安靜時段開始</label>
-            <input id="setting-quiet-start" type="text" class="time-input" placeholder="HH:mm" pattern="[0-2][0-9]:[0-5][0-9]">
+            <div class="time-input-group">
+              <input id="setting-quiet-start" type="text" class="time-input" placeholder="22:00" data-format="24">
+              <button type="button" class="time-fmt-toggle" data-target="setting-quiet-start" title="切換 12/24 小時制">24h</button>
+            </div>
 
             <label for="setting-quiet-end">安靜時段結束</label>
-            <input id="setting-quiet-end" type="text" class="time-input" placeholder="HH:mm" pattern="[0-2][0-9]:[0-5][0-9]">
+            <div class="time-input-group">
+              <input id="setting-quiet-end" type="text" class="time-input" placeholder="08:00" data-format="24">
+              <button type="button" class="time-fmt-toggle" data-target="setting-quiet-end" title="切換 12/24 小時制">24h</button>
+            </div>
 
             <label class="checkbox-label">
               <input id="setting-catchup" type="checkbox" checked> 啟用補提醒
