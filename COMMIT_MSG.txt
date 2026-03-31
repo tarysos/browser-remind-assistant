@@ -1,0 +1,8 @@
+feat: OpenClaw integration — Native Bridge + externally_connectable + Skill (v1.2.0)
+
+- Native Messaging Bridge (bridge.js, install.js, trigger.js, send-command.js)
+- externally_connectable for on-demand triggering (no polling)
+- OpenClaw Skill definition (skills/browser-reminder/skill.md)
+- Options page OpenClaw usage guide
+- Updated README with full OpenClaw documentation
+- All 82 tests + 3 bridge tests passing

@@ -12,11 +12,44 @@ metadata:
 
 管理瀏覽器提醒的 OpenClaw Skill。透過 Chrome Native Messaging 與 Browser Reminder Assistant 擴充功能溝通，支援建立、編輯、刪除、啟停用提醒，以及查詢提醒清單與觸發通知。
 
+## 架構
+
+```
+OpenClaw 下命令
+  → send-command.js 寫入 ~/.openclaw/pending-commands/
+  → trigger.js 啟動 localhost 頁面
+  → chrome.runtime.sendMessage(extensionId, {action:'poll'})
+  → Extension onMessageExternal → pollNativeHost()
+  → bridge.js 讀取 pending commands → 回傳 → 執行 CRUD
+```
+
+使用 `externally_connectable` 機制按需觸發，命令即時執行，不使用定時 polling。
+
 ## 前置需求
 
 1. 安裝 **Browser Reminder Assistant** Chrome 擴充功能
-2. 安裝 Native Messaging Bridge（`com.openclaw.reminder_bridge`）
-3. Bridge 需註冊於系統中（Windows: Registry / macOS: `~/Library/Application Support/Google/Chrome/NativeMessagingHosts/`）
+2. 安裝 Native Messaging Bridge：
+   ```bash
+   cd native-bridge
+   node install.js <your-chrome-extension-id>
+   ```
+   Extension ID 可在 `chrome://extensions/` 中找到。
+3. Bridge 會自動在系統中註冊（Windows: Registry / macOS: NativeMessagingHosts / Linux: ~/.config）
+
+## 發送命令
+
+使用 `send-command.js` 一站式寫入命令並觸發 Extension：
+
+```bash
+# 查詢狀態
+node send-command.js <ext-id> '{"id":"cmd_001","type":"get_status","payload":{}}'
+
+# 建立提醒
+node send-command.js <ext-id> '{"id":"cmd_002","type":"create_reminder","payload":{...}}'
+
+# 也可傳入檔案路徑
+node send-command.js <ext-id> ./my-command.json
+```
 
 ## 可用命令
 
@@ -168,8 +201,22 @@ metadata:
 }
 ```
 
+## 檔案結構
+
+```
+native-bridge/
+├── bridge.js                     # Bridge 主程式（stdin/stdout JSON）
+├── install.js                    # 跨平台安裝腳本
+├── trigger.js                    # 通知 Extension 立即 poll
+├── send-command.js               # 一站式：寫入命令 + 觸發
+├── test-bridge.js                # Bridge 功能測試
+└── com.openclaw.reminder_bridge.json  # Host manifest 模板
+```
+
 ## 注意事項
 
-- 擴充功能每 1 分鐘 poll 一次 Native Host，命令不會即時執行
+- 使用 `externally_connectable` 機制按需觸發，命令即時執行，無定時 polling
+- 下達命令後，`trigger.js` 會啟動臨時 localhost 頁面通知 Extension 立即 poll
 - 若 Native Host 未安裝，擴充功能會靜默跳過，不影響正常使用
 - 所有時間欄位建議使用 ISO 8601 格式並附帶時區
+- 支援平台：Windows / macOS / Linux

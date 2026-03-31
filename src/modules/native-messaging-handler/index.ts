@@ -38,8 +38,6 @@ import {
 import {
   createAlarmForReminder,
   clearAlarmForReminder,
-  createOpenClawPollAlarm,
-  clearOpenClawPollAlarm,
 } from '../alarm-manager/index.js';
 import { evaluate } from '../trigger-evaluator/index.js';
 import { showNotification } from '../notification-manager/index.js';
@@ -264,22 +262,6 @@ async function handleGetStatus(commandId: string): Promise<CommandResult> {
       enabledReminders: enabled.length,
     },
   };
-}
-
-// ============================================================
-// Polling 管理
-// ============================================================
-
-/** 啟動 OpenClaw polling（建立週期 alarm） */
-export async function setupOpenClawPolling(): Promise<void> {
-  await createOpenClawPollAlarm();
-  console.log('[native-messaging] OpenClaw polling alarm 已建立');
-}
-
-/** 停止 OpenClaw polling */
-export async function teardownOpenClawPolling(): Promise<void> {
-  await clearOpenClawPollAlarm();
-  console.log('[native-messaging] OpenClaw polling alarm 已清除');
 }
 
 // ============================================================

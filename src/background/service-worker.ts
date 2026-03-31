@@ -34,9 +34,7 @@ import {
 import { updateBadge } from '../modules/badge-manager/index.js';
 import {
   pollNativeHost,
-  setupOpenClawPolling,
 } from '../modules/native-messaging-handler/index.js';
-import { OPENCLAW_POLL_ALARM_NAME } from '../modules/alarm-manager/index.js';
 import { getSettings } from '../modules/reminder-repository/index.js';
 import { isWithinTimeWindow } from '../modules/trigger-evaluator/index.js';
 import type {
@@ -124,12 +122,7 @@ async function triggerReminder(reminder: Reminder, result: TriggerResult): Promi
 async function handleAlarmTrigger(alarm: chrome.alarms.Alarm): Promise<void> {
   const parsed = parseAlarmName(alarm.name);
   if (!parsed) return;
-
-  // OpenClaw polling alarm → 執行 poll
-  if (parsed.type === 'openclaw_poll') {
-    pollNativeHost();
-    return;
-  }
+  if (parsed.type === 'openclaw_poll') return; // 已改為 externally_connectable 觸發
 
   const reminder = await getReminderById(parsed.reminderId);
   if (!reminder) return;
@@ -235,9 +228,6 @@ async function onStartup(): Promise<void> {
   }
   // 啟動後更新 badge
   await updateBadge();
-
-  // 啟動 OpenClaw polling（SA §14）
-  await setupOpenClawPolling();
 }
 
 // --- install / update / startup ---
@@ -278,5 +268,21 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 
 // --- notification 互動 ---
 setupNotificationListeners(handleNotificationAction);
+
+// --- OpenClaw externally_connectable (SA §14) ---
+// 外部頁面（localhost）透過 chrome.runtime.sendMessage 觸發 poll
+chrome.runtime.onMessageExternal.addListener(
+  (message, _sender, sendResponse) => {
+    if (message?.action === 'poll') {
+      pollNativeHost().then((results) => {
+        sendResponse({ success: true, results });
+      }).catch((err) => {
+        sendResponse({ success: false, error: (err as Error).message });
+      });
+      return true; // 非同步 sendResponse
+    }
+    sendResponse({ success: false, error: 'Unknown action' });
+  },
+);
 
 console.log('[sw] Service Worker 已載入');

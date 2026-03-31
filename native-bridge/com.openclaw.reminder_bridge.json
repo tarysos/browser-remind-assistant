@@ -1,0 +1,9 @@
+{
+  "name": "com.openclaw.reminder_bridge",
+  "description": "OpenClaw ↔ Browser Reminder Assistant Native Messaging Bridge",
+  "path": "__BRIDGE_PATH__",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://__EXTENSION_ID__/"
+  ]
+}

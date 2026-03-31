@@ -175,23 +175,4 @@ export async function rebuildAllAlarms(reminders: Reminder[]): Promise<void> {
   }
 }
 
-// ============================================================
-// OpenClaw Polling Alarm
-// ============================================================
-
-/** 預設 polling 間隔（分鐘） */
-const DEFAULT_POLL_INTERVAL_MINUTES = 1;
-
-/** 建立 OpenClaw polling alarm（週期性） */
-export async function createOpenClawPollAlarm(
-  intervalMinutes: number = DEFAULT_POLL_INTERVAL_MINUTES,
-): Promise<void> {
-  await chrome.alarms.create(OPENCLAW_POLL_ALARM_NAME, {
-    periodInMinutes: intervalMinutes,
-  });
-}
-
-/** 清除 OpenClaw polling alarm */
-export async function clearOpenClawPollAlarm(): Promise<void> {
-  await chrome.alarms.clear(OPENCLAW_POLL_ALARM_NAME);
-}
+// (OpenClaw polling alarm 已移除，改用 externally_connectable 按需觸發)
