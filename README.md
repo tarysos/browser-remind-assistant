@@ -115,35 +115,143 @@ skills/browser-reminder/
 
 讓 [OpenClaw](https://openclaw.com) AI 助手透過自然語言管理你的瀏覽器提醒。
 
-### 架構
+### 運作架構
 
 ```
 OpenClaw 下命令
   → send-command.js 寫入 ~/.openclaw/pending-commands/
-  → trigger.js 啟動 localhost 頁面
-  → chrome.runtime.sendMessage(extensionId, {action:'poll'})
-  → Extension onMessageExternal → pollNativeHost()
-  → bridge.js 讀取 pending commands → 回傳 → 執行 CRUD
+  → trigger.js 啟動臨時 localhost 頁面
+  → 頁面呼叫 chrome.runtime.sendMessage(extensionId, {action:'poll'})
+  → Extension onMessageExternal 收到通知 → 呼叫 pollNativeHost()
+  → bridge.js 讀取 pending commands → 回傳給 Extension → 執行 CRUD
+  → 命令檔自動刪除
 ```
 
-### 安裝 Native Bridge
+使用 `externally_connectable` 機制按需觸發，**命令即時執行**，不使用定時 polling。
+
+### 下載
+
+從 [GitHub Releases](https://github.com/user/browser-remind-assistant/releases) 下載：
+
+| 檔案 | 說明 |
+|------|------|
+| `browser-reminder-assistant-v1.2.0.zip` | Chrome 擴充功能本體，解壓後載入 Chrome |
+| `native-bridge.zip` | Native Messaging Bridge，用於 OpenClaw ↔ Extension 通訊 |
+| `skill.md` | OpenClaw Skill 定義檔，描述所有可用命令 |
+
+### 安裝步驟
+
+#### Step 1：安裝 Chrome 擴充功能
+
+1. 下載 `browser-reminder-assistant-v1.2.0.zip` 並解壓
+2. 開啟 Chrome，前往 `chrome://extensions/`
+3. 開啟右上角「開發人員模式」
+4. 點擊「載入未封裝項目」→ 選擇解壓後的資料夾
+5. 記下擴充功能的 **Extension ID**（格式如 `abcdefghijklmnopqrstuvwxyzabcdef`）
+
+#### Step 2：安裝 Native Messaging Bridge
+
+> 前置條件：需已安裝 [Node.js](https://nodejs.org/)（v16+）
+
+1. 下載 `native-bridge.zip` 並解壓到任意位置（例如 `~/openclaw/native-bridge/`）
+2. 執行安裝腳本：
 
 ```bash
 cd native-bridge
-node install.js <your-chrome-extension-id>
+node install.js <your-extension-id>
 ```
 
-Extension ID 可在 `chrome://extensions/` 中找到。
+安裝腳本會自動：
+- **Windows**：產生 `bridge.bat` 包裝檔 → 寫入 Registry 註冊 `com.openclaw.reminder_bridge`
+- **macOS**：寫入 `~/Library/Application Support/Google/Chrome/NativeMessagingHosts/com.openclaw.reminder_bridge.json`
+- **Linux**：寫入 `~/.config/google-chrome/NativeMessagingHosts/com.openclaw.reminder_bridge.json`
+- 建立 `~/.openclaw/pending-commands/` 目錄
 
-### 發送命令
+3. **重新啟動 Chrome**（必須，Chrome 只在啟動時讀取 Native Host 註冊）
+
+#### Step 3：驗證安裝
 
 ```bash
-# 查詢狀態
+cd native-bridge
+node test-bridge.js
+```
+
+應輸出 3/3 通過：
+```
+🦞 Bridge 功能測試
+
+--- 測試 1: 無 pending commands ---
+  ✅ 通過：收到空命令陣列
+--- 測試 2: 有 pending command ---
+  ✅ 通過：收到正確命令
+  ✅ 通過：命令檔已刪除
+--- 測試 3: 非 poll 動作 ---
+  ✅ 通過：非 poll 回傳空陣列
+
+結果: 3/3 通過
+```
+
+#### Step 4：安裝 OpenClaw Skill（選用）
+
+下載 `skill.md` 並放入 OpenClaw 的 skills 目錄：
+
+```bash
+# 或使用 clawhub（如果可用）
+clawhub install browser-reminder
+```
+
+### 使用方式
+
+#### 方式一：透過 OpenClaw 自然語言（推薦）
+
+安裝 Skill 後，直接對龍蝦說：
+
+- 🗣️ 「幫我設一個明天下午 3 點的提醒，要記得繳電費」
+- 🗣️ 「每週一三五早上 9 點提醒我站會」
+- 🗣️ 「列出我所有的提醒」
+- 🗣️ 「把那個繳電費的提醒刪掉」
+- 🗣️ 「暫停每週站會的提醒」
+
+#### 方式二：透過 send-command.js 手動下命令
+
+```bash
+cd native-bridge
+
+# 查詢擴充狀態
 node send-command.js <ext-id> '{"id":"cmd_001","type":"get_status","payload":{}}'
 
-# 建立提醒
-node send-command.js <ext-id> '{"id":"cmd_002","type":"create_reminder","payload":{"title":"繳電費","message":"","reminderType":"one_time","schedule":{"dateTime":"2026-04-05T14:00:00+08:00","timezone":"Asia/Taipei"},"rule":{"allowMissedCatchup":true}}}'
+# 建立單次提醒
+node send-command.js <ext-id> '{"id":"cmd_002","type":"create_reminder","payload":{"title":"繳電費","message":"記得繳這個月的電費","reminderType":"one_time","schedule":{"dateTime":"2026-04-05T14:00:00+08:00","timezone":"Asia/Taipei"},"rule":{"allowMissedCatchup":true}}}'
+
+# 列出所有提醒
+node send-command.js <ext-id> '{"id":"cmd_003","type":"list_reminders","payload":{"filter":"all"}}'
+
+# 也可以傳入 JSON 檔案
+node send-command.js <ext-id> ./my-command.json
 ```
+
+執行後會自動開啟 Chrome 頁面觸發 Extension poll，完成後頁面自動關閉。
+
+### native-bridge 檔案說明
+
+| 檔案 | 用途 |
+|------|------|
+| `bridge.js` | Bridge 主程式 — 接收 Extension 的 stdin 請求，掃描 `~/.openclaw/pending-commands/`，回傳命令後刪除檔案 |
+| `install.js` | 安裝腳本 — 自動產生 host manifest、註冊系統、建立目錄 |
+| `trigger.js` | 觸發器 — 啟動臨時 localhost HTTP server，頁面透過 `chrome.runtime.sendMessage` 通知 Extension |
+| `send-command.js` | 一站式工具 — 寫入命令 JSON 檔 + 自動呼叫 trigger.js |
+| `test-bridge.js` | 測試腳本 — 驗證 bridge stdin/stdout 協議正確性 |
+| `com.openclaw.reminder_bridge.json` | Host manifest 模板 — install.js 會用實際路徑覆寫 |
+
+### 疑難排解
+
+| 問題 | 解決方式 |
+|------|----------|
+| Extension 收不到命令 | 確認已重啟 Chrome；檢查 `chrome://extensions/` 是否有錯誤 |
+| `test-bridge.js` 失敗 | 確認 Node.js v16+ 已安裝；確認 `~/.openclaw/pending-commands/` 目錄存在 |
+| Registry 寫入失敗（Windows） | 以系統管理員身份執行 `node install.js` |
+| trigger.js 開啟頁面但無反應 | 確認 Extension ID 正確；確認 manifest.json 含 `externally_connectable` |
+| 命令執行但提醒沒出現 | 檢查命令 JSON 格式是否正確（需有 `id`、`type`、`payload`） |
 
 完整命令文件請參閱 [skills/browser-reminder/skill.md](skills/browser-reminder/skill.md)。
 
