@@ -1,4 +1,0 @@
-docs: comprehensive OpenClaw usage documentation
-
-- README: full install steps, usage examples, file descriptions, troubleshooting
-- skill.md: detailed prerequisites, natural language examples, troubleshooting table
