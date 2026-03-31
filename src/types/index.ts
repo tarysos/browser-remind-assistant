@@ -40,6 +40,26 @@ export type {
   GlobalSettings,
 } from './settings.js';
 
+export {
+  NATIVE_HOST_NAME,
+} from './native-messaging.js';
+
+export type {
+  NativeCommandType,
+  CreateReminderPayload,
+  UpdateReminderPayload,
+  DeleteReminderPayload,
+  ToggleReminderPayload,
+  ListRemindersPayload,
+  TriggerNotificationPayload,
+  GetStatusPayload,
+  NativeCommandPayloadMap,
+  NativeCommand,
+  NativePollRequest,
+  NativePollResponse,
+  CommandResult,
+} from './native-messaging.js';
+
 // ============================================================
 // Storage 資料結構（chrome.storage.local 的 key/value 形狀）
 // ============================================================

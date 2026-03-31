@@ -32,6 +32,11 @@ import {
   setupStartupListener,
 } from '../modules/lifecycle-manager/index.js';
 import { updateBadge } from '../modules/badge-manager/index.js';
+import {
+  pollNativeHost,
+  setupOpenClawPolling,
+} from '../modules/native-messaging-handler/index.js';
+import { OPENCLAW_POLL_ALARM_NAME } from '../modules/alarm-manager/index.js';
 import { getSettings } from '../modules/reminder-repository/index.js';
 import { isWithinTimeWindow } from '../modules/trigger-evaluator/index.js';
 import type {
@@ -119,6 +124,12 @@ async function triggerReminder(reminder: Reminder, result: TriggerResult): Promi
 async function handleAlarmTrigger(alarm: chrome.alarms.Alarm): Promise<void> {
   const parsed = parseAlarmName(alarm.name);
   if (!parsed) return;
+
+  // OpenClaw polling alarm → 執行 poll
+  if (parsed.type === 'openclaw_poll') {
+    pollNativeHost();
+    return;
+  }
 
   const reminder = await getReminderById(parsed.reminderId);
   if (!reminder) return;
@@ -224,6 +235,9 @@ async function onStartup(): Promise<void> {
   }
   // 啟動後更新 badge
   await updateBadge();
+
+  // 啟動 OpenClaw polling（SA §14）
+  await setupOpenClawPolling();
 }
 
 // --- install / update / startup ---

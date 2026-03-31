@@ -15,6 +15,9 @@ import type {
 // Alarm 名稱規範
 // ============================================================
 
+/** OpenClaw polling alarm 名稱 */
+export const OPENCLAW_POLL_ALARM_NAME = 'openclaw:poll';
+
 /** 產生 alarm 名稱，格式: reminder:{id} */
 export function getAlarmName(reminderId: string): string {
   return `reminder:${reminderId}`;
@@ -25,8 +28,16 @@ export function getSnoozeAlarmName(reminderId: string): string {
   return `snooze:${reminderId}`;
 }
 
-/** 從 alarm 名稱解析 reminder ID */
-export function parseAlarmName(alarmName: string): { type: 'reminder' | 'snooze'; reminderId: string } | null {
+/** Alarm 解析結果 */
+export type ParsedAlarm =
+  | { type: 'reminder' | 'snooze'; reminderId: string }
+  | { type: 'openclaw_poll' };
+
+/** 從 alarm 名稱解析類型與 ID */
+export function parseAlarmName(alarmName: string): ParsedAlarm | null {
+  if (alarmName === OPENCLAW_POLL_ALARM_NAME) {
+    return { type: 'openclaw_poll' };
+  }
   const match = alarmName.match(/^(reminder|snooze):(.+)$/);
   if (!match) return null;
   return { type: match[1] as 'reminder' | 'snooze', reminderId: match[2] };
@@ -162,4 +173,25 @@ export async function rebuildAllAlarms(reminders: Reminder[]): Promise<void> {
       await createAlarmForReminder(reminder);
     }
   }
+}
+
+// ============================================================
+// OpenClaw Polling Alarm
+// ============================================================
+
+/** 預設 polling 間隔（分鐘） */
+const DEFAULT_POLL_INTERVAL_MINUTES = 1;
+
+/** 建立 OpenClaw polling alarm（週期性） */
+export async function createOpenClawPollAlarm(
+  intervalMinutes: number = DEFAULT_POLL_INTERVAL_MINUTES,
+): Promise<void> {
+  await chrome.alarms.create(OPENCLAW_POLL_ALARM_NAME, {
+    periodInMinutes: intervalMinutes,
+  });
+}
+
+/** 清除 OpenClaw polling alarm */
+export async function clearOpenClawPollAlarm(): Promise<void> {
+  await chrome.alarms.clear(OPENCLAW_POLL_ALARM_NAME);
 }

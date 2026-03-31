@@ -1,6 +1,6 @@
 {
   "name": "browser-remind-assistant",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "瀏覽器工作流中的輕量提醒助手",
   "scripts": {
     "build": "tsc && node scripts/copy-public.mjs",

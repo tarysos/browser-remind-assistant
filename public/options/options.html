@@ -227,6 +227,70 @@
           </div>
         </div>
       </details>
+      <!-- OpenClaw Integration Section (collapsible) -->
+      <details id="section-openclaw" class="section collapsible">
+        <summary class="collapsible-header">
+          <h2>🦞 與 OpenClaw 搭配使用</h2>
+          <span class="collapse-hint">點擊展開</span>
+        </summary>
+        <div class="collapsible-body">
+          <div style="line-height: 1.7; color: #555;">
+            <p>Browser Reminder Assistant 支援透過 <strong>OpenClaw</strong>（龍蝦）進行 AI 驅動的提醒管理。你可以用自然語言請龍蝦幫你建立、修改、刪除提醒，無需手動操作。</p>
+
+            <h3 style="margin-top: 16px; font-size: 14px; color: #333;">📦 安裝步驟</h3>
+            <ol style="padding-left: 20px; margin: 8px 0;">
+              <li>確認已安裝 <strong>OpenClaw</strong>（<a href="https://openclaw.com" target="_blank" rel="noopener">openclaw.com</a>）</li>
+              <li>安裝 Native Messaging Bridge：
+                <pre style="background: #f5f5f5; padding: 8px 12px; border-radius: 6px; margin: 6px 0; font-size: 13px; overflow-x: auto;">clawhub install browser-reminder</pre>
+              </li>
+              <li>Bridge 會自動在系統中註冊 <code>com.openclaw.reminder_bridge</code></li>
+              <li>重新啟動瀏覽器，擴充功能將自動開始每分鐘 poll 一次 Native Host</li>
+            </ol>
+
+            <h3 style="margin-top: 16px; font-size: 14px; color: #333;">💬 使用方式</h3>
+            <p>安裝完成後，直接對龍蝦說：</p>
+            <ul style="padding-left: 20px; margin: 8px 0; list-style: none;">
+              <li>🗣️ <em>「幫我設一個明天下午 3 點的提醒，要記得繳電費」</em></li>
+              <li>🗣️ <em>「每週一三五早上 9 點提醒我站會」</em></li>
+              <li>🗣️ <em>「列出我所有的提醒」</em></li>
+              <li>🗣️ <em>「把那個繳電費的提醒刪掉」</em></li>
+              <li>🗣️ <em>「暫停每週站會的提醒」</em></li>
+            </ul>
+
+            <h3 style="margin-top: 16px; font-size: 14px; color: #333;">⚙️ 支援的功能</h3>
+            <table style="width: 100%; font-size: 13px; border-collapse: collapse; margin: 8px 0;">
+              <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 6px 8px;"><strong>建立提醒</strong></td>
+                <td style="padding: 6px 8px;">單次、週期、首次開啟、網站情境</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 6px 8px;"><strong>編輯提醒</strong></td>
+                <td style="padding: 6px 8px;">修改標題、內容、排程</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 6px 8px;"><strong>刪除提醒</strong></td>
+                <td style="padding: 6px 8px;">移除指定提醒</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 6px 8px;"><strong>啟用／停用</strong></td>
+                <td style="padding: 6px 8px;">暫停或恢復提醒</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 6px 8px;"><strong>查詢清單</strong></td>
+                <td style="padding: 6px 8px;">列出全部或啟用中的提醒</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 8px;"><strong>觸發通知</strong></td>
+                <td style="padding: 6px 8px;">立即發送指定提醒的通知</td>
+              </tr>
+            </table>
+
+            <p style="margin-top: 12px; font-size: 12px; color: #999;">
+              ⚠️ 若未安裝 Native Messaging Bridge，此功能不會影響擴充功能的正常運作。擴充功能會靜默跳過 poll 請求。
+            </p>
+          </div>
+        </div>
+      </details>
     </main>
   </div>
 
