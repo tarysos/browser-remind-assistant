@@ -5,12 +5,13 @@
 
 import { getAllRemindersArray } from '../reminder-repository/index.js';
 import { getSettings } from '../reminder-repository/index.js';
-import { evaluate, getPeriodKey } from '../trigger-evaluator/index.js';
+import { evaluate, getPeriodKey, getReminderFrequency, isCompletedInCurrentPeriod } from '../trigger-evaluator/index.js';
 import type {
   Reminder,
   OneTimeReminder,
   RecurringReminder,
   FirstOpenReminder,
+  SiteTriggerReminder,
 } from '../../types/reminder.js';
 
 // ============================================================
@@ -37,17 +38,16 @@ function countPending(reminders: Reminder[]): number {
       if (targetTime <= now && !s.triggeredAt) count++;
       if (s.triggeredAt && !s.completedAt) count++;
     } else {
-      const s = (r as RecurringReminder | FirstOpenReminder).state;
-      if (s.completedAt) continue;
+      const s = (r as RecurringReminder | FirstOpenReminder | SiteTriggerReminder).state;
+      const freq = getReminderFrequency(r);
+      // completedAt 只阻擋當期
+      if (isCompletedInCurrentPeriod(s.completedAt, freq)) continue;
       if (s.snoozeUntil && new Date(s.snoozeUntil).getTime() > now) continue;
 
       // 已觸發但本 period 尚未完成
       if (s.lastTriggeredAt) {
-        const freq = r.type === 'recurring'
-          ? (r as RecurringReminder).schedule.frequency
-          : (r as FirstOpenReminder).schedule.cadence;
         const currentPeriod = getPeriodKey(freq);
-        if (s.lastTriggeredPeriodKey === currentPeriod && !s.completedAt) {
+        if (s.lastTriggeredPeriodKey === currentPeriod && !isCompletedInCurrentPeriod(s.completedAt, freq)) {
           count++;
         }
       }
@@ -67,11 +67,13 @@ function countToday(reminders: Reminder[]): number {
   for (const r of reminders) {
     if (!r.enabled) continue;
 
-    // 已完成的跳過
-    const completedAt = r.type === 'one_time'
-      ? (r as OneTimeReminder).state.completedAt
-      : (r as RecurringReminder | FirstOpenReminder).state.completedAt;
-    if (completedAt) continue;
+    // 已完成的跳過：單次永久跳過，週期只跳過當期
+    if (r.type === 'one_time') {
+      if ((r as OneTimeReminder).state.completedAt) continue;
+    } else {
+      const completedAt = (r as RecurringReminder | FirstOpenReminder | SiteTriggerReminder).state.completedAt;
+      if (isCompletedInCurrentPeriod(completedAt, getReminderFrequency(r))) continue;
+    }
 
     if (r.type === 'one_time') {
       const target = new Date((r as OneTimeReminder).schedule.dateTime);
@@ -89,11 +91,9 @@ function countToday(reminders: Reminder[]): number {
       if (result.shouldTrigger) count++;
 
       // 已觸發本 period 但未完成也算
-      const s = (r as RecurringReminder | FirstOpenReminder).state;
-      const freq = r.type === 'recurring'
-        ? (r as RecurringReminder).schedule.frequency
-        : (r as FirstOpenReminder).schedule.cadence;
-      if (s.lastTriggeredPeriodKey === getPeriodKey(freq) && !s.completedAt) {
+      const s = (r as RecurringReminder | FirstOpenReminder | SiteTriggerReminder).state;
+      const freq = getReminderFrequency(r);
+      if (s.lastTriggeredPeriodKey === getPeriodKey(freq) && !isCompletedInCurrentPeriod(s.completedAt, freq)) {
         count++;
       }
     }

@@ -19,6 +19,7 @@ import {
   evaluate,
   evaluateAll,
   getPeriodKey,
+  getReminderFrequency,
 } from '../modules/trigger-evaluator/index.js';
 import {
   showNotification,
@@ -52,20 +53,6 @@ import type { TriggerResult } from '../modules/trigger-evaluator/index.js';
 // ============================================================
 const DEFAULT_SNOOZE_MINUTES = 30;
 
-/** 取得提醒的頻率（用於計算 periodKey） */
-function getFrequency(reminder: Reminder): 'daily' | 'weekly' | 'monthly' {
-  switch (reminder.type) {
-    case 'one_time': return 'daily';
-    case 'recurring': return (reminder as RecurringReminder).schedule.frequency;
-    case 'first_open': return (reminder as FirstOpenReminder).schedule.cadence;
-    case 'site_trigger': {
-      const cadence = (reminder as SiteTriggerReminder).schedule.cadence;
-      return cadence === 'every_visit' ? 'daily' : cadence;
-    }
-    default: return 'daily';
-  }
-}
-
 // ============================================================
 // 核心觸發流程 (SA §6.2.1)
 // ============================================================
@@ -95,7 +82,10 @@ async function triggerReminder(reminder: Reminder, result: TriggerResult): Promi
   } else {
     const state = (reminder as RecurringReminder | FirstOpenReminder | SiteTriggerReminder).state;
     state.lastTriggeredAt = now;
-    state.lastTriggeredPeriodKey = getPeriodKey(getFrequency(reminder));
+    state.lastTriggeredPeriodKey = getPeriodKey(getReminderFrequency(reminder));
+    // 新 period 觸發時重置上一期的完成與延後狀態
+    state.completedAt = null;
+    state.snoozeUntil = null;
   }
   await updateReminder(reminder);
 
@@ -103,7 +93,7 @@ async function triggerReminder(reminder: Reminder, result: TriggerResult): Promi
   await addHistoryEntry(
     reminder.id,
     result.reason === 'missed_catchup' ? 'missed_catchup' : 'triggered',
-    getPeriodKey(getFrequency(reminder)),
+    getPeriodKey(getReminderFrequency(reminder)),
     result.source,
   );
 
@@ -173,7 +163,7 @@ async function handleNotificationAction(
 
   const now = new Date().toISOString();
   let eventType: HistoryEventType;
-  const periodKey = getPeriodKey(getFrequency(reminder));
+  const periodKey = getPeriodKey(getReminderFrequency(reminder));
 
   switch (action) {
     case 'complete': {

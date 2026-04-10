@@ -11,6 +11,7 @@ import type {
   SiteTriggerReminder,
   DayOfWeek,
   PeriodKey,
+  Frequency,
   RecurringState,
   OneTimeState,
 } from '../../types/reminder.js';
@@ -87,6 +88,35 @@ function isInSnooze(snoozeUntil: string | null): boolean {
   return new Date(snoozeUntil).getTime() > Date.now();
 }
 
+/**
+ * 取得提醒的週期頻率（統一入口）
+ * site_trigger 的 every_visit 以 daily 作為 period 計算基準
+ */
+export function getReminderFrequency(reminder: Reminder): Frequency {
+  switch (reminder.type) {
+    case 'one_time': return 'daily';
+    case 'recurring': return (reminder as RecurringReminder).schedule.frequency;
+    case 'first_open': return (reminder as FirstOpenReminder).schedule.cadence;
+    case 'site_trigger': {
+      const cadence = (reminder as SiteTriggerReminder).schedule.cadence;
+      return cadence === 'every_visit' ? 'daily' : cadence;
+    }
+    default: return 'daily';
+  }
+}
+
+/**
+ * 判斷週期性提醒的 completedAt 是否在當前 period 內
+ * 用於週期提醒：completedAt 只應阻擋「本期」，不應永久阻擋
+ */
+export function isCompletedInCurrentPeriod(
+  completedAt: string | null,
+  frequency: Frequency,
+): boolean {
+  if (!completedAt) return false;
+  return getPeriodKey(frequency, new Date(completedAt)) === getPeriodKey(frequency);
+}
+
 // ============================================================
 // 各類型判斷
 // ============================================================
@@ -121,7 +151,8 @@ function evaluateRecurring(reminder: RecurringReminder, source: TriggerSource): 
   const { state, schedule } = reminder;
   const no: TriggerResult = { shouldTrigger: false, source };
 
-  if (state.completedAt) return no;
+  // completedAt 只阻擋當期，跨期後自動恢復
+  if (isCompletedInCurrentPeriod(state.completedAt, schedule.frequency)) return no;
   if (isInSnooze(state.snoozeUntil)) return no;
 
   const periodKey = getPeriodKey(schedule.frequency);
@@ -161,7 +192,8 @@ function evaluateFirstOpen(reminder: FirstOpenReminder, source: TriggerSource): 
   const { state, schedule, rule } = reminder;
   const no: TriggerResult = { shouldTrigger: false, source };
 
-  if (state.completedAt) return no;
+  // completedAt 只阻擋當期
+  if (isCompletedInCurrentPeriod(state.completedAt, schedule.cadence)) return no;
   if (isInSnooze(state.snoozeUntil)) return no;
 
   const now = new Date();
@@ -220,7 +252,9 @@ function evaluateSiteTrigger(
   const { state, schedule, rule } = reminder;
   const no: TriggerResult = { shouldTrigger: false, source };
 
-  if (state.completedAt) return no;
+  // completedAt 只阻擋當期（every_visit 以 daily 為基準）
+  const completedFreq = schedule.cadence === 'every_visit' ? 'daily' as const : schedule.cadence;
+  if (isCompletedInCurrentPeriod(state.completedAt, completedFreq)) return no;
   if (state.snoozeUntil && new Date(state.snoozeUntil).getTime() > Date.now()) return no;
 
   // URL 匹配

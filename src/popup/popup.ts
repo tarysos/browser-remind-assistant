@@ -10,7 +10,7 @@ import {
   addHistoryEntry,
 } from '../modules/reminder-repository/index.js';
 import { createSnoozeAlarm, clearAlarmForReminder } from '../modules/alarm-manager/index.js';
-import { getPeriodKey } from '../modules/trigger-evaluator/index.js';
+import { getPeriodKey, getReminderFrequency, isCompletedInCurrentPeriod } from '../modules/trigger-evaluator/index.js';
 import type {
   Reminder,
   OneTimeReminder,
@@ -58,11 +58,13 @@ function categorize(reminders: Reminder[]): CategorizedReminders {
       continue;
     }
 
-    // 檢查已完成
-    const completedAt = r.type === 'one_time'
-      ? (r as OneTimeReminder).state.completedAt
-      : (r as RecurringReminder | FirstOpenReminder | SiteTriggerReminder).state.completedAt;
-    if (completedAt) continue;
+    // 檢查已完成：單次提醒永久跳過，週期提醒只跳過當期
+    if (r.type === 'one_time') {
+      if ((r as OneTimeReminder).state.completedAt) continue;
+    } else {
+      const completedAt = (r as RecurringReminder | FirstOpenReminder | SiteTriggerReminder).state.completedAt;
+      if (isCompletedInCurrentPeriod(completedAt, getReminderFrequency(r))) continue;
+    }
 
     // 判斷是否為今日待處理
     if (r.type === 'one_time') {
@@ -205,12 +207,7 @@ async function handleAction(id: string, action: string, snoozeValue?: string): P
   const reminder = await getReminderById(id);
   if (!reminder) return;
   const now = new Date().toISOString();
-  const freq: 'daily' | 'weekly' | 'monthly' = reminder.type === 'one_time' ? 'daily'
-    : reminder.type === 'recurring' ? (reminder as RecurringReminder).schedule.frequency
-    : reminder.type === 'site_trigger'
-      ? ((reminder as SiteTriggerReminder).schedule.cadence === 'every_visit' ? 'daily' : (reminder as SiteTriggerReminder).schedule.cadence as 'daily' | 'weekly')
-      : (reminder as FirstOpenReminder).schedule.cadence;
-  const periodKey = getPeriodKey(freq);
+  const periodKey = getPeriodKey(getReminderFrequency(reminder));
 
   if (action === 'complete') {
     if (reminder.type === 'one_time') (reminder as OneTimeReminder).state.completedAt = now;
