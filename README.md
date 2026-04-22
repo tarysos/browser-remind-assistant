@@ -38,7 +38,7 @@ npm install
 ### 開發
 
 ```bash
-npm run build      # 編譯 TypeScript + 複製靜態檔案到 dist/
+npm run build      # 清空 dist/ 後重新產生可直接載入 Chrome 的版本
 npm run watch      # TypeScript watch mode
 npm test           # 執行測試
 npm run test:watch # 測試 watch mode
@@ -51,6 +51,19 @@ npm run test:watch # 測試 watch mode
 3. 開啟右上角「開發人員模式」
 4. 點擊「載入未封裝項目」
 5. 選擇專案中的 `dist/` 資料夾
+
+### 從 Git / GitHub 取得專案時要注意
+
+- Chrome 只能載入 `dist/`，**不能直接載入 repo 根目錄**。
+- 如果你是 `git clone` 這個 repo，直接選 `dist/` 即可。
+- 如果你下載的是 GitHub 自動產生的原始碼壓縮檔，請確認壓縮檔內有 `dist/`；若沒有，先執行：
+
+```bash
+npm install
+npm run build
+```
+
+- 若你要給一般使用者安裝，優先提供 release zip，而不是 GitHub 的原始碼 zip。
 
 ### 重新產生 Icon
 
@@ -131,11 +144,11 @@ OpenClaw 下命令
 
 ### 下載
 
-從 [GitHub Releases](https://github.com/user/browser-remind-assistant/releases) 下載：
+從 [GitHub Releases](https://github.com/tarysos/browser-remind-assistant/releases) 下載：
 
 | 檔案 | 說明 |
 |------|------|
-| `browser-reminder-assistant-v1.2.0.zip` | Chrome 擴充功能本體，解壓後載入 Chrome |
+| `browser-reminder-assistant-v1.2.2.zip` | Chrome 擴充功能本體，解壓後載入 Chrome |
 | `native-bridge.zip` | Native Messaging Bridge，用於 OpenClaw ↔ Extension 通訊 |
 | `skill.md` | OpenClaw Skill 定義檔，描述所有可用命令 |
 
@@ -143,7 +156,7 @@ OpenClaw 下命令
 
 #### Step 1：安裝 Chrome 擴充功能
 
-1. 下載 `browser-reminder-assistant-v1.2.0.zip` 並解壓
+1. 下載 `browser-reminder-assistant-v1.2.2.zip` 並解壓
 2. 開啟 Chrome，前往 `chrome://extensions/`
 3. 開啟右上角「開發人員模式」
 4. 點擊「載入未封裝項目」→ 選擇解壓後的資料夾

@@ -1,10 +1,10 @@
 {
   "name": "browser-remind-assistant",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "瀏覽器工作流中的輕量提醒助手",
   "scripts": {
-    "build": "tsc && node scripts/copy-public.mjs",
-    "build:ts": "tsc",
+    "build": "npm run clean && tsc && node scripts/copy-public.mjs",
+    "build:ts": "npm run clean && tsc",
     "watch": "tsc --watch",
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
     "test": "vitest run",
